@@ -9,10 +9,16 @@ def lambda_handler(event, context):
     print("🔔 Event received:")
     print(json.dumps(event, indent=2))
 
-    request_parameters = event.get("detail", {}).get("requestParameters", {})
-    ip_permissions = request_parameters.get("ipPermissions", {}).get("items", [])
+    detail = event.get("detail", {})
+    request_parameters = detail.get("requestParameters", {})
+    user_identity = detail.get("userIdentity", {})
+    user_name = user_identity.get("userName", "Unknown")
+    principal_id = user_identity.get("principalId", "Unknown")
+    event_time = detail.get("eventTime", "Unknown")
+    sg_id = request_parameters.get("groupId", "Unknown")
 
-    flagged_ports = []
+    ip_permissions = request_parameters.get("ipPermissions", {}).get("items", [])
+    flagged_ports = set()
 
     for perm in ip_permissions:
         from_port = perm.get("fromPort", 0)
@@ -23,19 +29,16 @@ def lambda_handler(event, context):
             if ip_range.get("cidrIp") == "0.0.0.0/0":
                 for port in range(from_port, to_port + 1):
                     if port not in SAFE_PORTS:
-                        print(f"🚨 Flagged port: {port}")
-                        flagged_ports.append(port)
+                        flagged_ports.add(port)
 
         ipv6_ranges = perm.get("ipv6Ranges", {}).get("items", [])
         for ip6 in ipv6_ranges:
             if ip6.get("cidrIpv6") == "::/0":
                 for port in range(from_port, to_port + 1):
                     if port not in SAFE_PORTS:
-                        print(f"🚨 Flagged IPv6 port: {port}")
-                        flagged_ports.append(port)
+                        flagged_ports.add(port)
 
     if flagged_ports:
-        sg_id = request_parameters.get("groupId", "Unknown")
         msg = {
             "@type": "MessageCard",
             "@context": "http://schema.org/extensions",
@@ -45,7 +48,9 @@ def lambda_handler(event, context):
             "sections": [{
                 "activityTitle": f"Security Group: {sg_id}",
                 "facts": [
-                    {"name": "Unusual Ports", "value": str(sorted(set(flagged_ports)))},
+                    {"name": "Unusual Ports", "value": str(sorted(flagged_ports))},
+                    {"name": "Modified By", "value": f"{user_name} ({principal_id})"},
+                    {"name": "Time", "value": event_time},
                     {"name": "Recommendation", "value": "Restrict public access"}
                 ],
                 "markdown": True
