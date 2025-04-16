@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Detect and alert on insecure Security Group ingress rules
+
+Parameters:
+  TEAMSWebhook:
+    Type: String
+    Description: Teams webhook URL to send alerts
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: python3.11
+
+Resources:
+
+  SGMonitorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      CodeUri: sg_monitor/
+      Layers:
+        - !Ref RequestsLayer
+      Environment:
+        Variables:
+          TEAMS_WEBHOOK_URL: !Ref TEAMSWebhook
+      Events:
+        SecurityGroupIngressEvent:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - "aws.ec2"
+              detail-type:
+                - "AWS API Call via CloudTrail"
+              detail:
+                eventName:
+                  - "AuthorizeSecurityGroupIngress"
+
+  RequestsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: requests-lib
+      Description: External requests library
+      ContentUri: sg_monitor/
+      CompatibleRuntimes:
+        - python3.11
