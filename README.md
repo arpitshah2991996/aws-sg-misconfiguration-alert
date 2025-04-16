@@ -78,3 +78,5 @@ Alerts will appear in your Microsoft Teams channel with details about:
 - Security Group ID
 - Unsafe open ports
 - Recommendation to restrict access
+- User who made the change
+- Timestamp of the event
