@@ -5,6 +5,8 @@ import requests
 SAFE_PORTS = {22, 80, 443, 53, 3306}
 TEAMS_WEBHOOK_URL = os.environ['TEAMS_WEBHOOK_URL']
 
+# comment
+
 def lambda_handler(event, context):
     print("🔔 Event received:")
     print(json.dumps(event, indent=2))
