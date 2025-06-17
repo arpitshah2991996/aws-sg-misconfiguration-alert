@@ -2,7 +2,7 @@ import os
 import json
 import requests
 
-SAFE_PORTS = {22, 80, 443, 53, 3306}
+SAFE_PORTS = {80, 443}
 TEAMS_WEBHOOK_URL = os.environ['TEAMS_WEBHOOK_URL']
 
 # comment 1
